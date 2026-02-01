@@ -1,0 +1,28 @@
+# Plan (contains credential references)
+PLAN.md
+
+# Binaries
+/rollbar
+/rollbar-cli
+bin/
+*.exe
+dist/
+
+# Test artifacts
+coverage.out
+coverage.html
+*.test
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config files with tokens (if created locally)
+.rollbar.yaml
+.rollbar.json
