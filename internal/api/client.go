@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -100,6 +101,81 @@ func (c *Client) doRequest(method, path string, query url.Values) ([]byte, error
 	}
 
 	return body, nil
+}
+
+func (c *Client) doRequestWithBody(method, path string, query url.Values, payload interface{}) ([]byte, error) {
+	u := c.baseURL + path
+	if len(query) > 0 {
+		u += "?" + query.Encode()
+	}
+
+	var reqBody io.Reader
+	if payload != nil {
+		jsonBody, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling request body: %w", err)
+		}
+		reqBody = bytes.NewReader(jsonBody)
+	}
+
+	req, err := http.NewRequest(method, u, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+
+	req.Header.Set("X-Rollbar-Access-Token", c.accessToken)
+	req.Header.Set("Accept", "application/json")
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Message != "" {
+			return nil, &APIError{
+				StatusCode: resp.StatusCode,
+				Message:    errResp.Message,
+				Err:        errResp.Err,
+			}
+		}
+		return nil, &APIError{
+			StatusCode: resp.StatusCode,
+			Message:    string(body),
+		}
+	}
+
+	return body, nil
+}
+
+// UpdateItemStatus updates the status of an item (e.g., "resolved", "active", "muted")
+func (c *Client) UpdateItemStatus(id int64, status string) (*Item, error) {
+	payload := map[string]string{
+		"status": status,
+	}
+
+	body, err := c.doRequestWithBody("PATCH", fmt.Sprintf("/item/%d", id), nil, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp ItemResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("parsing response: %w", err)
+	}
+
+	resp.Result.ComputeFields()
+	return &resp.Result, nil
 }
 
 // ItemsOptions configures the list items request

@@ -1,13 +1,13 @@
 ---
 name: rollbar
-description: Query Rollbar error tracking to investigate errors, list recent issues, and get context for bug fixes. Use when the user asks about production errors, wants to investigate an error, asks "what errors happened overnight", or needs context to fix a bug from Rollbar.
+description: Query Rollbar error tracking to investigate errors, list recent issues, resolve items, and get context for bug fixes. Use when the user asks about production errors, wants to investigate an error, asks "what errors happened overnight", wants to mark issues as resolved, or needs context to fix a bug from Rollbar.
 user-invocable: false
 allowed-tools: Bash(rollbar *)
 ---
 
 # Rollbar Error Investigation
 
-Use the `rollbar` CLI to query Rollbar for error information. This tool is optimized for investigating production errors and providing context for bug fixes.
+Use the `rollbar` CLI to query and manage Rollbar errors. This tool is optimized for investigating production errors, providing context for bug fixes, and resolving issues.
 
 ## Prerequisites
 
@@ -64,6 +64,21 @@ rollbar occurrences --item 123 --limit 5
 rollbar occurrence 453568801204
 ```
 
+### Resolve items
+
+Mark items as resolved after fixing the underlying issue (requires write token):
+
+```bash
+# Resolve a single item
+rollbar resolve 123
+
+# Resolve multiple items at once
+rollbar resolve 93 95 97
+
+# Resolve by internal UUID
+rollbar resolve --uuid 8675309
+```
+
 ## Output Formats
 
 - `--output table` (default): Human-readable tables
@@ -90,6 +105,7 @@ rollbar occurrence 453568801204
 3. **Get full context**: `rollbar context <item-number>` for the specific error
 4. **Analyze stack trace**: The context output includes file paths and line numbers
 5. **Check patterns**: Look at multiple occurrences to understand the trigger
+6. **Fix and resolve**: After deploying a fix, mark the item as resolved: `rollbar resolve <item-number>`
 
 ## Example: Overnight Error Triage
 
@@ -104,3 +120,14 @@ rollbar context <item-number>
 ```
 
 The `--ai` flag provides compact output that's token-efficient while preserving all essential information.
+
+## Example: Resolve Items After Fix
+
+When asked "mark items 93 and 95 as resolved" or similar:
+
+```bash
+# Resolve multiple items after deploying a fix
+rollbar resolve 93 95
+```
+
+Note: Resolving items requires a project access token with "write" scope. If you get a permission error, the token only has read access.
