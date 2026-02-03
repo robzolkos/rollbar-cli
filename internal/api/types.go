@@ -177,6 +177,19 @@ func (i *Instance) ComputeFields() {
 	}
 }
 
+// ClientInfo contains client-side context (browser, runtime info)
+type ClientInfo struct {
+	JavaScript *ClientJavaScript `json:"javascript"`
+}
+
+// ClientJavaScript contains JavaScript runtime info
+type ClientJavaScript struct {
+	Browser             string `json:"browser"`
+	CodeVersion         string `json:"code_version"`
+	SourceMapEnabled    bool   `json:"source_map_enabled"`
+	GuessUncaughtFrames bool   `json:"guess_uncaught_frames"`
+}
+
 // InstanceData contains the occurrence payload
 type InstanceData struct {
 	Body        Body                   `json:"body"`
@@ -188,6 +201,7 @@ type InstanceData struct {
 	Request     *Request               `json:"request"`
 	Server      *Server                `json:"server"`
 	Person      *Person                `json:"person"`
+	Client      *ClientInfo            `json:"client"`
 	Custom      map[string]interface{} `json:"custom"`
 	Timestamp   int64                  `json:"timestamp"`
 	CodeVersion string                 `json:"code_version"`
