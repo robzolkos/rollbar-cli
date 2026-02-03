@@ -34,12 +34,18 @@ rollbar items --status active --limit 10
 # Get details for error #123
 rollbar item 123
 
-# Get full context for bug fixing (includes stack trace, request data, user info)
+# Get full context for bug fixing (includes stack trace, request data, browser, user email)
 rollbar context 123
 
 # Include multiple recent occurrences
 rollbar context 123 --occurrences 5
 ```
+
+The context output includes (when available):
+- Exception class, message, and full stack trace
+- Request URL, method, and the user's browser (User-Agent header)
+- Logged-in user's email address and ID
+- Server host, branch, and code version
 
 ### Search for specific errors
 
@@ -60,7 +66,7 @@ rollbar items --sort occurrences --limit 10
 # List recent occurrences for an item
 rollbar occurrences --item 123 --limit 5
 
-# Get details for a specific occurrence
+# Get details for a specific occurrence (includes browser, user email, request info)
 rollbar occurrence 453568801204
 ```
 

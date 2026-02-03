@@ -162,6 +162,9 @@ func (f *CompactFormatter) FormatInstance(w io.Writer, instance *api.Instance) e
 
 	if instance.Data.Request != nil && instance.Data.Request.URL != "" {
 		fmt.Fprintf(w, "Request: %s %s\n", instance.Data.Request.Method, instance.Data.Request.URL)
+		if ua := instance.Data.Request.Headers["User-Agent"]; ua != "" {
+			fmt.Fprintf(w, "Browser: %s\n", ua)
+		}
 	}
 
 	if instance.Data.Person != nil && instance.Data.Person.ID != "" {
@@ -236,6 +239,9 @@ func (f *CompactFormatter) FormatContext(w io.Writer, item *api.Item, instances 
 			fmt.Fprintf(w, "%s %s\n", inst.Data.Request.Method, inst.Data.Request.URL)
 			if inst.Data.Request.UserIP != "" {
 				fmt.Fprintf(w, "IP: %s\n", inst.Data.Request.UserIP)
+			}
+			if ua := inst.Data.Request.Headers["User-Agent"]; ua != "" {
+				fmt.Fprintf(w, "Browser: %s\n", ua)
 			}
 			fmt.Fprintln(w)
 		}
