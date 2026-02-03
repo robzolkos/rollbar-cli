@@ -105,7 +105,7 @@ func TestUpdateItemStatus(t *testing.T) {
 				}
 
 				w.WriteHeader(tt.serverStatus)
-				json.NewEncoder(w).Encode(tt.serverResponse)
+				_ = json.NewEncoder(w).Encode(tt.serverResponse)
 			}))
 			defer server.Close()
 
@@ -150,10 +150,10 @@ func TestDoRequestWithBody(t *testing.T) {
 
 		// Echo back the body
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"err":    0,
 			"result": body,
 		})
