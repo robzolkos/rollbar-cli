@@ -293,3 +293,120 @@ func TestE2E_AIMode(t *testing.T) {
 
 	t.Logf("AI mode output:\n%s", stdout)
 }
+
+func TestE2E_Resolve(t *testing.T) {
+	if itemCounter == 0 {
+		t.Skip("ROLLBAR_E2E_ITEM_COUNTER not set")
+	}
+
+	// First, get the item's current status
+	stdout, stderr, err := runRollbar(t, "item", strconv.Itoa(itemCounter), "--output", "json")
+	if err != nil {
+		t.Fatalf("failed to get item: %v\nstderr: %s", err, stderr)
+	}
+
+	var item map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &item); err != nil {
+		t.Fatalf("failed to parse item JSON: %v", err)
+	}
+
+	originalStatus := item["status"].(string)
+	t.Logf("Item #%d original status: %s", itemCounter, originalStatus)
+
+	// Resolve the item
+	_, stderr, err = runRollbar(t, "resolve", strconv.Itoa(itemCounter))
+	if err != nil {
+		// Check if it's a permission error (read-only token)
+		if strings.Contains(stderr, "scope") || strings.Contains(stderr, "403") || strings.Contains(stderr, "401") {
+			t.Skip("Token doesn't have write permissions - skipping resolve test")
+		}
+		t.Fatalf("resolve failed: %v\nstderr: %s", err, stderr)
+	}
+
+	// Verify the item is now resolved
+	stdout, stderr, err = runRollbar(t, "item", strconv.Itoa(itemCounter), "--output", "json")
+	if err != nil {
+		t.Fatalf("failed to get item after resolve: %v\nstderr: %s", err, stderr)
+	}
+
+	if err := json.Unmarshal([]byte(stdout), &item); err != nil {
+		t.Fatalf("failed to parse item JSON: %v", err)
+	}
+
+	newStatus := item["status"].(string)
+	if newStatus != "resolved" {
+		t.Errorf("expected status 'resolved', got '%s'", newStatus)
+	}
+
+	t.Logf("Item #%d successfully resolved (was: %s, now: %s)", itemCounter, originalStatus, newStatus)
+}
+
+func TestE2E_ResolveMultiple(t *testing.T) {
+	// Get two active items to resolve
+	stdout, stderr, err := runRollbar(t, "items", "--status", "active", "--limit", "2", "--output", "json")
+	if err != nil {
+		t.Fatalf("failed to list items: %v\nstderr: %s", err, stderr)
+	}
+
+	var items []map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &items); err != nil {
+		t.Fatalf("failed to parse items JSON: %v", err)
+	}
+
+	if len(items) < 2 {
+		t.Skip("Need at least 2 active items to test batch resolve")
+	}
+
+	counter1 := int(items[0]["counter"].(float64))
+	counter2 := int(items[1]["counter"].(float64))
+
+	t.Logf("Attempting to resolve items #%d and #%d", counter1, counter2)
+
+	// Resolve both items
+	_, stderr, err = runRollbar(t, "resolve", strconv.Itoa(counter1), strconv.Itoa(counter2))
+	if err != nil {
+		if strings.Contains(stderr, "scope") || strings.Contains(stderr, "403") || strings.Contains(stderr, "401") {
+			t.Skip("Token doesn't have write permissions - skipping batch resolve test")
+		}
+		t.Fatalf("batch resolve failed: %v\nstderr: %s", err, stderr)
+	}
+
+	// Verify both items are resolved
+	for _, counter := range []int{counter1, counter2} {
+		stdout, stderr, err = runRollbar(t, "item", strconv.Itoa(counter), "--output", "json")
+		if err != nil {
+			t.Fatalf("failed to get item #%d: %v\nstderr: %s", counter, err, stderr)
+		}
+
+		var item map[string]interface{}
+		if err := json.Unmarshal([]byte(stdout), &item); err != nil {
+			t.Fatalf("failed to parse item JSON: %v", err)
+		}
+
+		if item["status"].(string) != "resolved" {
+			t.Errorf("item #%d: expected status 'resolved', got '%s'", counter, item["status"])
+		}
+	}
+
+	t.Logf("Successfully resolved items #%d and #%d", counter1, counter2)
+}
+
+func TestE2E_ResolveInvalidCounter(t *testing.T) {
+	_, stderr, err := runRollbar(t, "resolve", "not-a-number")
+	if err == nil {
+		t.Error("expected error for invalid counter")
+	}
+	if !strings.Contains(stderr, "invalid counter") {
+		t.Errorf("expected 'invalid counter' in error, got: %s", stderr)
+	}
+}
+
+func TestE2E_ResolveNoArgs(t *testing.T) {
+	_, stderr, err := runRollbar(t, "resolve")
+	if err == nil {
+		t.Error("expected error when no arguments provided")
+	}
+	if !strings.Contains(stderr, "requires") {
+		t.Errorf("expected 'requires' in error message, got: %s", stderr)
+	}
+}

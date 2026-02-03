@@ -24,11 +24,12 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "rollbar",
 	Short: "CLI for Rollbar error tracking",
-	Long: `A command-line interface for Rollbar focused on reading and listing items
-and occurrences. Optimized for both AI coding agents and human users.
+	Long: `A command-line interface for Rollbar focused on reading, listing, and
+managing items and occurrences. Optimized for both AI coding agents and human users.
 
 Use 'rollbar items' to list errors, 'rollbar item <counter>' to get details,
-and 'rollbar context <counter>' to generate AI-friendly bug context.`,
+'rollbar context <counter>' to generate AI-friendly bug context, and
+'rollbar resolve <counter>' to mark items as resolved.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -76,6 +77,7 @@ func init() {
 	rootCmd.AddCommand(newConfigCmd())
 	rootCmd.AddCommand(newCompletionCmd())
 	rootCmd.AddCommand(newInitCmd())
+	rootCmd.AddCommand(newResolveCmd())
 }
 
 // getFormatter returns the appropriate formatter based on flags

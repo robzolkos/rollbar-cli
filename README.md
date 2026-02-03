@@ -1,6 +1,6 @@
 # Rollbar CLI
 
-A command-line interface for [Rollbar](https://rollbar.com) focused on **reading and listing items and occurrences**. Optimized for both AI coding agents and human users.
+A command-line interface for [Rollbar](https://rollbar.com) for **reading, listing, and managing items and occurrences**. Optimized for both AI coding agents and human users.
 
 ## Installation
 
@@ -53,9 +53,10 @@ make build
 
 ## Quick Start
 
-1. **Get a read token** from Rollbar:
+1. **Get an access token** from Rollbar:
    - Go to your project's Settings → Access Tokens
-   - Create a token with "read" scope (or use an existing one)
+   - For read-only access: create a token with "read" scope
+   - For full access (including resolve): create a token with "write" scope
 
 2. **Configure the CLI**:
    ```bash
@@ -108,6 +109,21 @@ rollbar item 123
 
 # Include recent occurrences
 rollbar item 123 --occurrences 5
+```
+
+### Resolve Items
+
+Mark items as resolved (requires a token with "write" scope):
+
+```bash
+# Resolve a single item
+rollbar resolve 123
+
+# Resolve multiple items at once
+rollbar resolve 123 456 789
+
+# Resolve by internal UUID
+rollbar resolve --uuid 8675309
 ```
 
 ### Generate AI Context
@@ -196,6 +212,9 @@ rollbar items --sort occurrences --limit 1 --output json | jq -r '.[0].counter' 
 
 # "Find all TypeError issues"
 rollbar items --query "TypeError" --level error --ai
+
+# "Resolve items 93 and 95"
+rollbar resolve 93 95
 ```
 
 ## Claude Code Skill
