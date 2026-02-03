@@ -410,3 +410,79 @@ func TestE2E_ResolveNoArgs(t *testing.T) {
 		t.Errorf("expected 'requires' in error message, got: %s", stderr)
 	}
 }
+
+func TestE2E_OccurrenceDetail(t *testing.T) {
+	if itemCounter == 0 {
+		t.Skip("ROLLBAR_E2E_ITEM_COUNTER not set")
+	}
+
+	// First get occurrences for the item to find an occurrence ID
+	stdout, stderr, err := runRollbar(t, "occurrences", "--item", strconv.Itoa(itemCounter), "--output", "json", "--limit", "1")
+	if err != nil {
+		t.Fatalf("occurrences list failed: %v\nstderr: %s", err, stderr)
+	}
+
+	var instances []map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &instances); err != nil {
+		t.Fatalf("failed to parse JSON: %v", err)
+	}
+
+	if len(instances) == 0 {
+		t.Skip("No occurrences found for item")
+	}
+
+	occID := int64(instances[0]["id"].(float64))
+	t.Logf("Testing occurrence detail for ID: %d", occID)
+
+	// Get the occurrence detail in markdown format to check for browser/user info
+	stdout, stderr, err = runRollbar(t, "occurrence", strconv.FormatInt(occID, 10), "--output", "markdown")
+	if err != nil {
+		t.Fatalf("occurrence detail failed: %v\nstderr: %s", err, stderr)
+	}
+
+	// Check basic structure
+	if !strings.Contains(stdout, "# Occurrence") {
+		t.Error("expected '# Occurrence' header in markdown output")
+	}
+
+	// Log what we found for debugging
+	hasBrowser := strings.Contains(stdout, "Browser:")
+	hasUser := strings.Contains(stdout, "Person") || strings.Contains(stdout, "Email")
+	hasRequest := strings.Contains(stdout, "Request")
+
+	t.Logf("Occurrence detail - has request: %v, has browser: %v, has user: %v", hasRequest, hasBrowser, hasUser)
+	t.Logf("Output length: %d bytes", len(stdout))
+}
+
+func TestE2E_ContextWithBrowserAndUser(t *testing.T) {
+	if itemCounter == 0 {
+		t.Skip("ROLLBAR_E2E_ITEM_COUNTER not set")
+	}
+
+	// Get context in markdown format
+	stdout, stderr, err := runRollbar(t, "context", strconv.Itoa(itemCounter), "--output", "markdown")
+	if err != nil {
+		t.Fatalf("context failed: %v\nstderr: %s", err, stderr)
+	}
+
+	// Check basic structure
+	if !strings.Contains(stdout, "# Bug Report") {
+		t.Error("expected '# Bug Report' header")
+	}
+
+	// Log what contextual info we found
+	hasBrowser := strings.Contains(stdout, "Browser:")
+	hasUser := strings.Contains(stdout, "User:") || strings.Contains(stdout, "User ID:")
+	hasRequest := strings.Contains(stdout, "Request:")
+
+	t.Logf("Context output - has request: %v, has browser: %v, has user: %v", hasRequest, hasBrowser, hasUser)
+
+	// Also test compact format
+	stdout, stderr, err = runRollbar(t, "context", strconv.Itoa(itemCounter), "--output", "compact")
+	if err != nil {
+		t.Fatalf("context compact failed: %v\nstderr: %s", err, stderr)
+	}
+
+	hasBrowserCompact := strings.Contains(stdout, "Browser:")
+	t.Logf("Compact context - has browser: %v", hasBrowserCompact)
+}

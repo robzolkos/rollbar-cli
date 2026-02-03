@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -192,6 +193,43 @@ type ItemsOptions struct {
 
 // ListItems returns items matching the given options
 func (c *Client) ListItems(opts ItemsOptions) ([]Item, int, error) {
+	// Handle comma-separated levels by making multiple requests
+	if opts.Level != "" && strings.Contains(opts.Level, ",") {
+		return c.listItemsMultiLevel(opts)
+	}
+
+	return c.listItemsSingleLevel(opts)
+}
+
+// listItemsMultiLevel handles comma-separated level filters by making multiple API calls
+func (c *Client) listItemsMultiLevel(opts ItemsOptions) ([]Item, int, error) {
+	levels := strings.Split(opts.Level, ",")
+	seen := make(map[int64]bool)
+	var allItems []Item
+
+	for _, level := range levels {
+		levelOpts := opts
+		levelOpts.Level = strings.TrimSpace(level)
+
+		items, _, err := c.listItemsSingleLevel(levelOpts)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		// Deduplicate by item ID
+		for _, item := range items {
+			if !seen[item.ID.Int64()] {
+				seen[item.ID.Int64()] = true
+				allItems = append(allItems, item)
+			}
+		}
+	}
+
+	return allItems, 1, nil
+}
+
+// listItemsSingleLevel makes a single API call for items
+func (c *Client) listItemsSingleLevel(opts ItemsOptions) ([]Item, int, error) {
 	q := url.Values{}
 
 	if opts.Status != "" && opts.Status != "any" {

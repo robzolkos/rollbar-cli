@@ -106,6 +106,9 @@ func (f *MarkdownFormatter) FormatInstance(w io.Writer, instance *api.Instance) 
 		if instance.Data.Request.UserIP != "" {
 			fmt.Fprintf(w, "- **User IP:** %s\n", instance.Data.Request.UserIP)
 		}
+		if ua := instance.Data.Request.Headers["User-Agent"]; ua != "" {
+			fmt.Fprintf(w, "- **Browser:** %s\n", ua)
+		}
 		fmt.Fprintln(w)
 	}
 
@@ -190,6 +193,9 @@ func (f *MarkdownFormatter) FormatContext(w io.Writer, item *api.Item, instances
 			fmt.Fprintf(w, "### Occurrence %d - %s\n", i+1, occ.Time.Format(time.RFC3339))
 			if occ.Data.Request != nil && occ.Data.Request.URL != "" {
 				fmt.Fprintf(w, "- **Request:** %s %s\n", occ.Data.Request.Method, occ.Data.Request.URL)
+				if ua := occ.Data.Request.Headers["User-Agent"]; ua != "" {
+					fmt.Fprintf(w, "- **Browser:** %s\n", ua)
+				}
 			}
 			if occ.Data.Person != nil && occ.Data.Person.Email != "" {
 				fmt.Fprintf(w, "- **User:** %s\n", occ.Data.Person.Email)

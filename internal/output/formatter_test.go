@@ -55,6 +55,18 @@ func sampleInstances() []api.Instance {
 						},
 					},
 				},
+				Request: &api.Request{
+					URL:    "https://example.com/api/test",
+					Method: "POST",
+					Headers: map[string]string{
+						"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+					},
+					UserIP: "192.168.1.100",
+				},
+				Person: &api.Person{
+					ID:    "user123",
+					Email: "test@example.com",
+				},
 			},
 		},
 	}
@@ -181,6 +193,94 @@ func TestMarkdownFormatter(t *testing.T) {
 		}
 		if !strings.Contains(output, "## Stack Trace") {
 			t.Error("expected '## Stack Trace' section")
+		}
+	})
+}
+
+func TestCompactFormatterInstance(t *testing.T) {
+	f := &CompactFormatter{}
+	var buf bytes.Buffer
+
+	t.Run("FormatInstance with browser and user", func(t *testing.T) {
+		buf.Reset()
+		inst := sampleInstances()[0]
+		err := f.FormatInstance(&buf, &inst)
+		if err != nil {
+			t.Fatalf("FormatInstance failed: %v", err)
+		}
+
+		output := buf.String()
+		if !strings.Contains(output, "Browser:") {
+			t.Error("expected 'Browser:' in compact instance output")
+		}
+		if !strings.Contains(output, "Mozilla") {
+			t.Error("expected User-Agent string in output")
+		}
+		if !strings.Contains(output, "test@example.com") {
+			t.Error("expected user email in output")
+		}
+	})
+
+	t.Run("FormatContext with browser and user", func(t *testing.T) {
+		buf.Reset()
+		err := f.FormatContext(&buf, sampleItem(), sampleInstances())
+		if err != nil {
+			t.Fatalf("FormatContext failed: %v", err)
+		}
+
+		output := buf.String()
+		if !strings.Contains(output, "Browser:") {
+			t.Error("expected 'Browser:' in compact context output")
+		}
+		if !strings.Contains(output, "## Person") {
+			t.Error("expected '## Person' section in context output")
+		}
+		if !strings.Contains(output, "test@example.com") {
+			t.Error("expected user email in context output")
+		}
+	})
+}
+
+func TestMarkdownFormatterInstance(t *testing.T) {
+	f := &MarkdownFormatter{}
+	var buf bytes.Buffer
+
+	t.Run("FormatInstance with browser and user", func(t *testing.T) {
+		buf.Reset()
+		inst := sampleInstances()[0]
+		err := f.FormatInstance(&buf, &inst)
+		if err != nil {
+			t.Fatalf("FormatInstance failed: %v", err)
+		}
+
+		output := buf.String()
+		if !strings.Contains(output, "**Browser:**") {
+			t.Error("expected '**Browser:**' in markdown instance output")
+		}
+		if !strings.Contains(output, "Mozilla") {
+			t.Error("expected User-Agent string in output")
+		}
+		if !strings.Contains(output, "## Person") {
+			t.Error("expected '## Person' section")
+		}
+		if !strings.Contains(output, "test@example.com") {
+			t.Error("expected user email in output")
+		}
+	})
+
+	t.Run("FormatContext with browser in occurrences", func(t *testing.T) {
+		buf.Reset()
+		err := f.FormatContext(&buf, sampleItem(), sampleInstances())
+		if err != nil {
+			t.Fatalf("FormatContext failed: %v", err)
+		}
+
+		output := buf.String()
+		if !strings.Contains(output, "**Browser:**") {
+			t.Error("expected '**Browser:**' in markdown context output")
+		}
+		if !strings.Contains(output, "**User:**") {
+			t.Error("expected '**User:**' in markdown context output")
 		}
 	})
 }

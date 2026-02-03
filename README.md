@@ -141,13 +141,19 @@ rollbar context 123 --out bug-context.md
 rollbar context 123 | pbcopy
 ```
 
+The context output includes (when available):
+- Exception details and stack trace
+- Request URL, method, and user's browser (User-Agent)
+- Logged-in user email and ID
+- Server and environment information
+
 ### View Occurrences
 
 ```bash
 # List occurrences for an item
 rollbar occurrences --item 123
 
-# Get single occurrence details
+# Get single occurrence details (includes browser, user email, request info)
 rollbar occurrence 453568801204
 ```
 
